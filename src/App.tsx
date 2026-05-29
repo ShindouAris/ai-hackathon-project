@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useAIStream } from './hooks/useAIStream'
+import { streamExplain, streamHint, generateQuestion } from './services/aiService'
 
 type PlanetName = 'Xác Suất' | 'Đại Số' | 'Hình Học' | 'Vi Tích Phân' | 'Ma Trận' | 'Số Phức' | 'Tổ Hợp' | 'Giải Tích'
 type View = 'space' | 'info' | 'mission'
@@ -356,6 +358,35 @@ export default function App() {
   }, [view])
 
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+  const [hintAttempt, setHintAttempt] = useState(0)
+  const [generatingQuestion, setGeneratingQuestion] = useState(false)
+  const [aiQuestions, setAiQuestions] = useState<Record<string, Task[]>>({})
+
+  const explainAI = useAIStream(streamExplain, { debounceMs: 400, cooldownMs: 1500 })
+  const hintAI = useAIStream(streamHint, { debounceMs: 400, cooldownMs: 2500 })
+  const generateAbortRef = useRef<AbortController | null>(null)
+  const generateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastGenerateAtRef = useRef(0)
+
+  useEffect(() => {
+    return () => {
+      generateAbortRef.current?.abort()
+      if (generateDebounceRef.current) clearTimeout(generateDebounceRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (view !== 'mission') {
+      explainAI.reset()
+      hintAI.reset()
+      generateAbortRef.current?.abort()
+      if (generateDebounceRef.current) {
+        clearTimeout(generateDebounceRef.current)
+        generateDebounceRef.current = null
+      }
+      setGeneratingQuestion(false)
+    }
+  }, [view, explainAI, hintAI])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey) {
@@ -404,8 +435,8 @@ export default function App() {
 
   function check(sel: number, cor: number) {
     setAnswered(sel)
-    if (!currentPlanet) return
-    const tasks = data[currentPlanet.name]
+    if (!currentPlanet || !task) return
+    const tasks = getTasks(currentPlanet.name)
     const isLast = questionIdx >= tasks.length - 1
     if (sel === cor) {
       if (isLast) {
@@ -417,20 +448,116 @@ export default function App() {
         setPlanetProgress(prev => ({ ...prev, [currentPlanet.name]: questionIdx + 1 }))
       }
     } else {
-      setAiMessage('⚠️ **HARD SPOT!** Trợ lý AI phát hiện điểm nghẽn. Hãy thử lại!')
+      setAiMessage('⚠️ **HARD SPOT!** Trợ lý AI đang phân tích lỗi sai...')
     }
+    hintAI.reset()
+    setHintAttempt(0)
+    explainAI.run({
+      question: task.q,
+      options: task.a,
+      correctIndex: task.c,
+      userAnswerIndex: sel,
+    })
+  }
+
+  function requestHint() {
+    if (!task) return
+    const next = Math.min(hintAttempt + 1, 3)
+    setHintAttempt(next)
+    setAiMessage(`💡 **CỨU CÁNH MỨC ${next}** đang được khởi động...`)
+    hintAI.run({
+      question: task.q,
+      options: task.a,
+      correctIndex: task.c,
+      userAnswerIndex: answered,
+      attempt: next,
+    })
+  }
+
+  async function handleGenerateAIQuestion() {
+    if (!currentPlanet) return
+
+    if (generateDebounceRef.current) {
+      clearTimeout(generateDebounceRef.current)
+      generateDebounceRef.current = null
+    }
+    generateAbortRef.current?.abort()
+
+    const sinceLast = Date.now() - lastGenerateAtRef.current
+    const cooldown = 4000
+    const wait = Math.max(500, cooldown - sinceLast)
+
+    setGeneratingQuestion(true)
+    setAiMessage('🛰️ AI đang sinh câu hỏi mới từ vũ trụ toán học...')
+
+    generateDebounceRef.current = setTimeout(async () => {
+      generateDebounceRef.current = null
+      const controller = new AbortController()
+      generateAbortRef.current = controller
+      lastGenerateAtRef.current = Date.now()
+
+      const planet = currentPlanet
+      try {
+        const existing = getTasks(planet.name)
+        const generated = await generateQuestion(
+          {
+            topic: planet.name,
+            difficulty: planet.difficulty,
+            avoid: existing.map(t => t.q),
+          },
+          controller.signal
+        )
+        if (controller.signal.aborted) return
+        const newTask: Task = {
+          q: generated.question,
+          a: generated.options,
+          c: generated.correctIndex,
+          explain: generated.explanation,
+        }
+        setAiQuestions(prev => ({
+          ...prev,
+          [planet.name]: [...(prev[planet.name] ?? []), newTask],
+        }))
+        setQuestionIdx(existing.length)
+        setAnswered(null)
+        explainAI.reset()
+        hintAI.reset()
+        setHintAttempt(0)
+        setAiMessage(`✨ **CÂU HỎI MỚI** từ AI đã sẵn sàng. Chinh phục thử thách bonus!`)
+      } catch (e) {
+        if (controller.signal.aborted) return
+        if (e instanceof Error && e.name === 'AbortError') return
+        setAiMessage(`⚠️ Không thể sinh câu hỏi mới: ${e instanceof Error ? e.message : 'lỗi không xác định'}`)
+      } finally {
+        if (generateAbortRef.current === controller) generateAbortRef.current = null
+        if (!controller.signal.aborted) setGeneratingQuestion(false)
+      }
+    }, wait)
   }
 
   function nextQuestion() {
     setAnswered(null)
     setQuestionIdx(i => i + 1)
+    explainAI.reset()
+    hintAI.reset()
+    setHintAttempt(0)
   }
 
   function retryQuestion() {
     setAnswered(null)
+    explainAI.reset()
   }
 
-  const tasks = currentPlanet ? data[currentPlanet.name] : null
+  const getTasks = useCallback(
+    (name: PlanetName): Task[] => {
+      const base = data[name]
+      const extra = aiQuestions[name] ?? []
+      return [...base, ...extra]
+    },
+    [aiQuestions]
+  )
+
+  const tasks = currentPlanet ? getTasks(currentPlanet.name) : null
   const task = tasks ? tasks[questionIdx] : null
   const isLastQuestion = tasks ? questionIdx >= tasks.length - 1 : false
   const staminaPct = (stamina / STAMINA_MAX) * 100
@@ -867,28 +994,79 @@ export default function App() {
                     : 'bg-amber-950/40 border-amber-500'
                 }`}
               >
-                <p
-                  className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${
-                    answered === task.c ? 'text-emerald-400' : 'text-amber-400'
-                  }`}
-                >
-                  {answered === task.c ? '💡 Giải thích' : '📖 Đáp án đúng'}
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-widest ${
+                      answered === task.c ? 'text-emerald-400' : 'text-amber-400'
+                    }`}
+                  >
+                    {answered === task.c ? '💡 Giải thích AI' : '📖 Đáp án đúng + Giải thích AI'}
+                  </p>
+                  {explainAI.isStreaming && (
+                    <span className="text-[9px] text-purple-300 animate-pulse flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                      AI đang suy nghĩ...
+                    </span>
+                  )}
+                </div>
                 {answered !== task.c && (
                   <p className="text-xs text-slate-300 mb-2">
                     <span className="text-emerald-400 font-bold">→ </span>
                     {task.a[task.c]}
                   </p>
                 )}
-                <p className="text-xs text-slate-300 leading-relaxed">{task.explain}</p>
+                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  {explainAI.error
+                    ? `⚠️ AI lỗi: ${explainAI.error.message}. Giải thích dự phòng: ${task.explain}`
+                    : explainAI.text || (explainAI.isStreaming ? '' : task.explain)}
+                  {explainAI.isStreaming && (
+                    <span className="inline-block w-2 h-3 ml-1 bg-purple-400 animate-pulse align-middle" />
+                  )}
+                </p>
+              </div>
+            )}
+            {answered !== null && answered !== task.c && hintAI.text && (
+              <div className="mt-3 p-4 rounded-xl border-l-4 bg-purple-950/40 border-purple-500">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-purple-300">
+                    🛟 Cứu cánh AI · Mức {hintAttempt}/3
+                  </p>
+                  {hintAI.isStreaming && (
+                    <span className="text-[9px] text-purple-300 animate-pulse">streaming...</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  {hintAI.text}
+                  {hintAI.isStreaming && (
+                    <span className="inline-block w-2 h-3 ml-1 bg-purple-400 animate-pulse align-middle" />
+                  )}
+                </p>
               </div>
             )}
             {answered !== null && (
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4 flex flex-wrap gap-3">
+                {answered !== task.c && hintAttempt < 3 && (
+                  <button
+                    onClick={requestHint}
+                    disabled={hintAI.isStreaming}
+                    className="flex-1 min-w-[120px] p-3 bg-purple-900 border border-purple-500 rounded-xl text-xs font-bold text-purple-200 hover:bg-purple-800 transition disabled:opacity-50"
+                  >
+                    🛟 {hintAttempt === 0 ? 'Cần cứu cánh' : `Gợi ý mạnh hơn (${hintAttempt + 1}/3)`}
+                  </button>
+                )}
+                {answered === task.c && isLastQuestion && (
+                  <button
+                    onClick={handleGenerateAIQuestion}
+                    disabled={generatingQuestion}
+                    className="flex-1 min-w-[140px] p-3 bg-violet-900 border border-violet-500 rounded-xl text-xs font-bold text-violet-200 hover:bg-violet-800 transition disabled:opacity-50"
+                  >
+                    {generatingQuestion ? '🛰️ AI đang sinh...' : '✨ Câu hỏi AI bonus'}
+                  </button>
+                )}
                 {answered === task.c && !isLastQuestion && (
                   <button
                     onClick={nextQuestion}
-                    className="flex-1 p-3 bg-emerald-800 border border-emerald-500 rounded-xl text-xs font-bold text-emerald-200 hover:bg-emerald-700 transition"
+                    className="flex-1 min-w-[120px] p-3 bg-emerald-800 border border-emerald-500 rounded-xl text-xs font-bold text-emerald-200 hover:bg-emerald-700 transition"
                   >
                     Câu kế tiếp →
                   </button>
@@ -896,14 +1074,14 @@ export default function App() {
                 {answered !== task.c && (
                   <button
                     onClick={retryQuestion}
-                    className="flex-1 p-3 bg-amber-800 border border-amber-500 rounded-xl text-xs font-bold text-amber-200 hover:bg-amber-700 transition"
+                    className="flex-1 min-w-[120px] p-3 bg-amber-800 border border-amber-500 rounded-xl text-xs font-bold text-amber-200 hover:bg-amber-700 transition"
                   >
                     🔄 Thử lại
                   </button>
                 )}
                 <button
                   onClick={() => setView('info')}
-                  className="flex-1 p-3 bg-cyan-800 border border-cyan-500 rounded-xl text-xs font-bold text-cyan-200 hover:bg-cyan-700 transition"
+                  className="flex-1 min-w-[120px] p-3 bg-cyan-800 border border-cyan-500 rounded-xl text-xs font-bold text-cyan-200 hover:bg-cyan-700 transition"
                 >
                   ← Thông tin
                 </button>
