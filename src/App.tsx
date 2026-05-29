@@ -7,6 +7,7 @@ interface Task {
   q: string
   a: string[]
   c: number
+  explain: string
 }
 
 const data: Record<PlanetName, Task[]> = {
@@ -15,16 +16,19 @@ const data: Record<PlanetName, Task[]> = {
       q: 'Công thức tính định thức ma trận vuông cấp 2: det(A) là gì?',
       a: ['ad - bc', 'ab - cd', 'ac - bd'],
       c: 0,
+      explain: 'Với ma trận A = [[a,b],[c,d]], định thức được tính theo quy tắc nhân chéo: lấy tích đường chéo chính (a·d) trừ đi tích đường chéo phụ (b·c).',
     },
     {
       q: 'Phương trình bậc hai ax² + bx + c = 0 có nghiệm khi nào?',
       a: ['Δ = b² - 4ac ≥ 0', 'Δ = b² + 4ac ≥ 0', 'a > 0', 'b ≠ 0'],
       c: 0,
+      explain: 'Biệt thức Δ = b² - 4ac quyết định số nghiệm: Δ > 0 có 2 nghiệm phân biệt, Δ = 0 có nghiệm kép, Δ < 0 vô nghiệm thực.',
     },
     {
       q: 'Tổng hai nghiệm của phương trình ax² + bx + c = 0 (theo Viète) bằng?',
       a: ['-b/a', 'b/a', 'c/a', '-c/a'],
       c: 0,
+      explain: 'Định lý Viète: nếu x₁, x₂ là hai nghiệm thì x₁ + x₂ = -b/a và x₁·x₂ = c/a.',
     },
   ],
   'Hình Học': [
@@ -32,16 +36,19 @@ const data: Record<PlanetName, Task[]> = {
       q: 'Trong không gian Oxyz, hai vector chỉ phương vuông góc với nhau thì tích vô hướng bằng bao nhiêu?',
       a: ['Bằng 0', 'Bằng 1', 'Bằng -1'],
       c: 0,
+      explain: 'Tích vô hướng u·v = |u||v|cos(θ). Khi vuông góc thì θ = 90°, cos(90°) = 0, nên tích vô hướng = 0.',
     },
     {
       q: 'Diện tích hình tròn bán kính r là?',
       a: ['πr²', '2πr', 'πr', '2r²'],
       c: 0,
+      explain: 'Diện tích hình tròn S = πr². Còn 2πr là chu vi, đừng nhầm lẫn nhé!',
     },
     {
       q: 'Tổng ba góc trong một tam giác bằng bao nhiêu độ?',
       a: ['180°', '90°', '360°', '270°'],
       c: 0,
+      explain: 'Đây là một định lý cơ bản của hình học Euclid: tổng ba góc trong bất kỳ tam giác nào luôn bằng 180° (hay π radian).',
     },
   ],
   'Xác Suất': [
@@ -53,16 +60,19 @@ const data: Record<PlanetName, Task[]> = {
         'Không đủ điều kiện logic toán học',
       ],
       c: 0,
+      explain: 'Định lý Bayes cập nhật xác suất dựa trên thông tin mới. Khi đã biết lô 2 chứa 1 phế, phế phẩm còn lại phải thuộc lô 1 (suy luận có điều kiện).',
     },
     {
       q: 'Xác suất của biến cố chắc chắn bằng?',
       a: ['1', '0', '0.5', '∞'],
       c: 0,
+      explain: 'Biến cố chắc chắn xảy ra có xác suất P = 1 (100%). Biến cố không thể xảy ra có P = 0. Mọi xác suất khác nằm trong [0, 1].',
     },
     {
       q: 'Hai biến cố A và B độc lập thì P(A∩B) bằng?',
       a: ['P(A) × P(B)', 'P(A) + P(B)', 'P(A) - P(B)', 'P(A) / P(B)'],
       c: 0,
+      explain: 'Định nghĩa biến cố độc lập: việc xảy ra của A không ảnh hưởng đến B, do đó xác suất cả hai cùng xảy ra bằng tích xác suất của từng biến cố.',
     },
   ],
   'Vi Tích Phân': [
@@ -70,16 +80,19 @@ const data: Record<PlanetName, Task[]> = {
       q: 'Đạo hàm của hàm số f(x) = x³ là gì?',
       a: ['3x²', 'x²', '3x', '2x³'],
       c: 0,
+      explain: 'Quy tắc lũy thừa: (xⁿ)\' = n·xⁿ⁻¹. Áp dụng với n=3: (x³)\' = 3·x² = 3x².',
     },
     {
       q: 'Đạo hàm của sin(x) là?',
       a: ['cos(x)', '-cos(x)', '-sin(x)', 'tan(x)'],
       c: 0,
+      explain: 'Đây là một công thức đạo hàm cơ bản: (sin x)\' = cos x. Nhớ thêm: (cos x)\' = -sin x.',
     },
     {
       q: 'Đạo hàm của hằng số bằng?',
       a: ['0', '1', 'Hằng số đó', 'Không xác định'],
       c: 0,
+      explain: 'Hằng số không thay đổi theo biến, nên tốc độ thay đổi (đạo hàm) bằng 0. Ví dụ: (5)\' = 0, (π)\' = 0.',
     },
   ],
   'Ma Trận': [
@@ -87,16 +100,19 @@ const data: Record<PlanetName, Task[]> = {
       q: 'Ma trận đơn vị I có tính chất gì khi nhân với ma trận A?',
       a: ['A·I = I·A = A', 'A·I = 0', 'A·I = I', 'A·I = A²'],
       c: 0,
+      explain: 'Ma trận đơn vị I đóng vai trò như số 1 trong phép nhân ma trận: nhân với bất kỳ ma trận A nào (cùng cấp tương thích) đều cho lại chính A.',
     },
     {
       q: 'Ma trận chuyển vị của ma trận A ký hiệu là?',
       a: ['Aᵀ', 'A⁻¹', '|A|', 'A*'],
       c: 0,
+      explain: 'Aᵀ (A transpose) là ma trận đổi dòng thành cột. A⁻¹ là ma trận nghịch đảo, |A| là định thức — đừng nhầm các ký hiệu này.',
     },
     {
       q: 'Ma trận có định thức bằng 0 được gọi là?',
       a: ['Ma trận suy biến', 'Ma trận đơn vị', 'Ma trận vuông', 'Ma trận chuyển vị'],
       c: 0,
+      explain: 'Ma trận suy biến (singular matrix) là ma trận có det = 0, đồng nghĩa với việc nó không khả nghịch — không có ma trận nghịch đảo.',
     },
   ],
   'Số Phức': [
@@ -104,16 +120,19 @@ const data: Record<PlanetName, Task[]> = {
       q: 'Số phức z = a + bi có môđun là gì?',
       a: ['√(a² + b²)', 'a + b', 'a² + b²', '√(a - b)'],
       c: 0,
+      explain: 'Môđun |z| là khoảng cách từ z đến gốc tọa độ trong mặt phẳng phức. Áp dụng định lý Pythagoras: |z| = √(a² + b²).',
     },
     {
       q: 'i² bằng bao nhiêu?',
       a: ['-1', '1', '0', 'i'],
       c: 0,
+      explain: 'i là đơn vị ảo, được định nghĩa sao cho i² = -1. Đây là nền tảng của toàn bộ lý thuyết số phức.',
     },
     {
       q: 'Số phức liên hợp của z = a + bi là?',
       a: ['a - bi', '-a + bi', '-a - bi', 'b + ai'],
       c: 0,
+      explain: 'Số phức liên hợp z̄ giữ nguyên phần thực, đổi dấu phần ảo. Tính chất: z·z̄ = a² + b² = |z|².',
     },
   ],
   'Tổ Hợp': [
@@ -121,16 +140,19 @@ const data: Record<PlanetName, Task[]> = {
       q: 'Công thức tổ hợp chập k của n phần tử C(n,k) bằng gì?',
       a: ['n! / (k!(n-k)!)', 'n! / k!', 'n × k', '(n-k)! / k!'],
       c: 0,
+      explain: 'C(n,k) đếm số cách chọn k phần tử từ n phần tử (không quan tâm thứ tự). Công thức: n! / (k!(n-k)!).',
     },
     {
       q: 'Số chỉnh hợp chập k của n phần tử A(n,k) bằng?',
       a: ['n! / (n-k)!', 'n! / k!', 'n! / (k!(n-k)!)', 'n × k'],
       c: 0,
+      explain: 'Chỉnh hợp A(n,k) đếm số cách chọn k phần tử từ n và sắp thứ tự. Công thức: n!/(n-k)! = n×(n-1)×...×(n-k+1).',
     },
     {
       q: 'Số hoán vị của n phần tử bằng?',
       a: ['n!', 'n²', '2ⁿ', 'n × (n-1)'],
       c: 0,
+      explain: 'Hoán vị P(n) = n! = 1×2×3×...×n. Đó là số cách sắp xếp toàn bộ n phần tử khác nhau theo thứ tự.',
     },
   ],
   'Giải Tích': [
@@ -138,16 +160,19 @@ const data: Record<PlanetName, Task[]> = {
       q: 'Tích phân ∫x dx bằng gì?',
       a: ['x²/2 + C', 'x² + C', '2x + C', 'x/2 + C'],
       c: 0,
+      explain: 'Quy tắc nguyên hàm lũy thừa: ∫xⁿ dx = xⁿ⁺¹/(n+1) + C. Áp dụng với n=1: ∫x dx = x²/2 + C.',
     },
     {
       q: 'Tích phân ∫cos(x) dx bằng?',
       a: ['sin(x) + C', '-sin(x) + C', 'cos(x) + C', '-cos(x) + C'],
       c: 0,
+      explain: 'Vì (sin x)\' = cos x, nên nguyên hàm của cos x là sin x + C. Cẩn thận: ∫sin x dx = -cos x + C (có dấu trừ).',
     },
     {
       q: 'lim(x→0) sin(x)/x bằng?',
       a: ['1', '0', '∞', 'Không xác định'],
       c: 0,
+      explain: 'Đây là giới hạn lượng giác kinh điển, có giá trị bằng 1. Nó là nền tảng để chứng minh đạo hàm của sin và cos.',
     },
   ],
 }
@@ -257,12 +282,29 @@ export default function App() {
       const elapsed = now - lastRegenTime.current
       if (elapsed >= REGEN_INTERVAL_MS) {
         const ticks = Math.floor(elapsed / REGEN_INTERVAL_MS)
-        setStamina(s => Math.min(STAMINA_MAX, s + ticks * REGEN_AMOUNT))
+        setStamina(s => {
+          const next = Math.min(STAMINA_MAX, s + ticks * REGEN_AMOUNT)
+          if (next !== s) {
+            console.log(`[REGEN] +${next - s} PP (${s} → ${next}/${STAMINA_MAX}) | ticks=${ticks}`)
+          }
+          return next
+        })
         lastRegenTime.current = now - (elapsed % REGEN_INTERVAL_MS)
       }
-    }, 10000)
+    }, 1000)
     return () => clearInterval(interval)
   }, [])
+
+  const [, setNowTick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(n => n + 1), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  const timeToNextRegen = Math.max(0, REGEN_INTERVAL_MS - (Date.now() - lastRegenTime.current))
+  const regenSeconds = Math.ceil(timeToNextRegen / 1000)
+  const regenMin = Math.floor(regenSeconds / 60)
+  const regenSec = regenSeconds % 60
 
   useEffect(() => {
     if (view === 'space') {
@@ -369,7 +411,11 @@ export default function App() {
               Thể lực: {stamina}/{STAMINA_MAX} PP
             </span>
           </div>
-          <p className="text-[8px] text-slate-500">Hồi phục 10 PP / 5 phút</p>
+          <p className="text-[8px] text-slate-500">
+            {stamina < STAMINA_MAX
+              ? `+10 PP sau ${regenMin}:${String(regenSec).padStart(2, '0')}`
+              : 'Đầy năng lượng'}
+          </p>
         </div>
       </header>
 
@@ -604,7 +650,31 @@ export default function App() {
               })}
             </div>
             {answered !== null && (
-              <div className="mt-6 flex gap-3">
+              <div
+                className={`mt-6 p-4 rounded-xl border-l-4 ${
+                  answered === task.c
+                    ? 'bg-emerald-950/40 border-emerald-500'
+                    : 'bg-amber-950/40 border-amber-500'
+                }`}
+              >
+                <p
+                  className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${
+                    answered === task.c ? 'text-emerald-400' : 'text-amber-400'
+                  }`}
+                >
+                  {answered === task.c ? '💡 Giải thích' : '📖 Đáp án đúng'}
+                </p>
+                {answered !== task.c && (
+                  <p className="text-xs text-slate-300 mb-2">
+                    <span className="text-emerald-400 font-bold">→ </span>
+                    {task.a[task.c]}
+                  </p>
+                )}
+                <p className="text-xs text-slate-300 leading-relaxed">{task.explain}</p>
+              </div>
+            )}
+            {answered !== null && (
+              <div className="mt-4 flex gap-3">
                 {answered === task.c && !isLastQuestion && (
                   <button
                     onClick={nextQuestion}
