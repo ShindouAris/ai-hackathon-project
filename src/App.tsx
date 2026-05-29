@@ -875,6 +875,24 @@ export default function App() {
 
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const [hintAttempt, setHintAttempt] = useState(0)
+  const [stuckPromptOpen, setStuckPromptOpen] = useState(false)
+  const [stuckDismissedKey, setStuckDismissedKey] = useState<string | null>(null)
+  const STUCK_THRESHOLD_MS = 25_000
+
+  const stuckQuestionKey =
+    view === 'mission' && currentPlanet
+      ? `${currentPlanet.name}::${questionIdx}`
+      : null
+
+  useEffect(() => {
+    setStuckPromptOpen(false)
+    if (!stuckQuestionKey || answered !== null) return
+    if (stuckDismissedKey === stuckQuestionKey) return
+    const timer = setTimeout(() => {
+      setStuckPromptOpen(true)
+    }, STUCK_THRESHOLD_MS)
+    return () => clearTimeout(timer)
+  }, [stuckQuestionKey, answered, stuckDismissedKey])
   const [generatingQuestion, setGeneratingQuestion] = useState(false)
   const [aiQuestions, setAiQuestions] = useState<Record<string, Task[]>>(() => {
     const all = getAllBank()
@@ -1045,6 +1063,8 @@ export default function App() {
     if (!task) return
     const next = Math.min(hintAttempt + 1, 3)
     setHintAttempt(next)
+    setStuckPromptOpen(false)
+    if (stuckQuestionKey) setStuckDismissedKey(stuckQuestionKey)
     setAiMessage(`💡 **CỨU CÁNH MỨC ${next}** đang được khởi động...`)
     hintAI.run({
       question: task.q,
@@ -1054,6 +1074,11 @@ export default function App() {
       attempt: next,
       userName,
     })
+  }
+
+  function dismissStuckPrompt() {
+    setStuckPromptOpen(false)
+    if (stuckQuestionKey) setStuckDismissedKey(stuckQuestionKey)
   }
 
   async function handleGenerateAIQuestion(opts: { forceFresh?: boolean } = {}) {
@@ -1653,6 +1678,41 @@ export default function App() {
               </div>
             </div>
             <h3 className="text-sm md:text-base font-semibold mb-6 text-slate-200">{task.q}</h3>
+            {stuckPromptOpen && answered === null && (
+              <div className="stuck-prompt mb-4 p-3 rounded-xl border border-purple-500/60 bg-gradient-to-br from-purple-950/80 to-slate-950/80 shadow-lg shadow-purple-900/40 flex items-start gap-3">
+                <span className="text-2xl flex-shrink-0 animate-bounce" style={{ animationDuration: '2s' }}>🤔</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-purple-200 mb-0.5">
+                    {userName ? `${userName} ơi, bạn có gặp khó khăn?` : 'Bạn có gặp khó khăn?'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 leading-relaxed mb-2">
+                    Mình thấy bạn đang suy nghĩ khá lâu. Để mình đọc câu hỏi và cho gợi ý nhé?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={requestHint}
+                      disabled={hintAI.isStreaming}
+                      className="px-3 py-1.5 rounded-lg bg-gradient-to-br from-purple-700 to-cyan-700 border border-cyan-500/60 text-[11px] font-bold text-white hover:scale-105 transition disabled:opacity-50 disabled:hover:scale-100"
+                    >
+                      💡 Hỏi AI ngay
+                    </button>
+                    <button
+                      onClick={dismissStuckPrompt}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-[11px] font-bold text-slate-300 hover:bg-slate-700 transition"
+                    >
+                      Tự nghĩ tiếp
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={dismissStuckPrompt}
+                  className="text-slate-500 hover:text-slate-300 w-5 h-5 flex items-center justify-center transition flex-shrink-0"
+                  title="Đóng"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <div className="space-y-3">
               {task.a.map((opt, i) => {
                 let btnClass =
@@ -1731,7 +1791,7 @@ export default function App() {
                 )}
               </div>
             )}
-            {answered !== null && answered !== task.c && hintAI.text && (
+            {hintAI.text && (answered === null || answered !== task.c) && (
               <div className="mt-3 p-4 rounded-xl border-l-4 bg-purple-950/40 border-purple-500">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-purple-300">
