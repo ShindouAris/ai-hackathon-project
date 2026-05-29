@@ -9,51 +9,147 @@ interface Task {
   c: number
 }
 
-const data: Record<PlanetName, Task> = {
-  'Đại Số': {
-    q: 'Công thức tính định thức ma trận vuông cấp 2: det(A) là gì?',
-    a: ['ad - bc', 'ab - cd', 'ac - bd'],
-    c: 0,
-  },
-  'Hình Học': {
-    q: 'Trong không gian Oxyz, hai vector chỉ phương vuông góc với nhau thì tích vô hướng bằng bao nhiêu?',
-    a: ['Bằng 0', 'Bằng 1', 'Bằng -1'],
-    c: 0,
-  },
-  'Xác Suất': {
-    q: 'Bài toán Xác suất: Lô thứ 2 là chính, có 2 sản phẩm chứa 1 phế phẩm. Vậy tỷ lệ phế phẩm lô thứ 1 là bao nhiêu nếu áp dụng định lý Bayes?',
-    a: [
-      'Lô thứ 2 chính chứa 1 phế thì phế phẩm còn lại chắc chắn thuộc lô 1',
-      'Tỷ lệ ngẫu nhiên 50/50',
-      'Không đủ điều kiện logic toán học',
-    ],
-    c: 0,
-  },
-  'Vi Tích Phân': {
-    q: 'Đạo hàm của hàm số f(x) = x³ là gì?',
-    a: ['3x²', 'x²', '3x', '2x³'],
-    c: 0,
-  },
-  'Ma Trận': {
-    q: 'Ma trận đơn vị I có tính chất gì khi nhân với ma trận A?',
-    a: ['A·I = I·A = A', 'A·I = 0', 'A·I = I', 'A·I = A²'],
-    c: 0,
-  },
-  'Số Phức': {
-    q: 'Số phức z = a + bi có môđun là gì?',
-    a: ['√(a² + b²)', 'a + b', 'a² + b²', '√(a - b)'],
-    c: 0,
-  },
-  'Tổ Hợp': {
-    q: 'Công thức tổ hợp chập k của n phần tử C(n,k) bằng gì?',
-    a: ['n! / (k!(n-k)!)', 'n! / k!', 'n × k', '(n-k)! / k!'],
-    c: 0,
-  },
-  'Giải Tích': {
-    q: 'Tích phân ∫x dx bằng gì?',
-    a: ['x²/2 + C', 'x² + C', '2x + C', 'x/2 + C'],
-    c: 0,
-  },
+const data: Record<PlanetName, Task[]> = {
+  'Đại Số': [
+    {
+      q: 'Công thức tính định thức ma trận vuông cấp 2: det(A) là gì?',
+      a: ['ad - bc', 'ab - cd', 'ac - bd'],
+      c: 0,
+    },
+    {
+      q: 'Phương trình bậc hai ax² + bx + c = 0 có nghiệm khi nào?',
+      a: ['Δ = b² - 4ac ≥ 0', 'Δ = b² + 4ac ≥ 0', 'a > 0', 'b ≠ 0'],
+      c: 0,
+    },
+    {
+      q: 'Tổng hai nghiệm của phương trình ax² + bx + c = 0 (theo Viète) bằng?',
+      a: ['-b/a', 'b/a', 'c/a', '-c/a'],
+      c: 0,
+    },
+  ],
+  'Hình Học': [
+    {
+      q: 'Trong không gian Oxyz, hai vector chỉ phương vuông góc với nhau thì tích vô hướng bằng bao nhiêu?',
+      a: ['Bằng 0', 'Bằng 1', 'Bằng -1'],
+      c: 0,
+    },
+    {
+      q: 'Diện tích hình tròn bán kính r là?',
+      a: ['πr²', '2πr', 'πr', '2r²'],
+      c: 0,
+    },
+    {
+      q: 'Tổng ba góc trong một tam giác bằng bao nhiêu độ?',
+      a: ['180°', '90°', '360°', '270°'],
+      c: 0,
+    },
+  ],
+  'Xác Suất': [
+    {
+      q: 'Bài toán Xác suất: Lô thứ 2 là chính, có 2 sản phẩm chứa 1 phế phẩm. Vậy tỷ lệ phế phẩm lô thứ 1 là bao nhiêu nếu áp dụng định lý Bayes?',
+      a: [
+        'Lô thứ 2 chính chứa 1 phế thì phế phẩm còn lại chắc chắn thuộc lô 1',
+        'Tỷ lệ ngẫu nhiên 50/50',
+        'Không đủ điều kiện logic toán học',
+      ],
+      c: 0,
+    },
+    {
+      q: 'Xác suất của biến cố chắc chắn bằng?',
+      a: ['1', '0', '0.5', '∞'],
+      c: 0,
+    },
+    {
+      q: 'Hai biến cố A và B độc lập thì P(A∩B) bằng?',
+      a: ['P(A) × P(B)', 'P(A) + P(B)', 'P(A) - P(B)', 'P(A) / P(B)'],
+      c: 0,
+    },
+  ],
+  'Vi Tích Phân': [
+    {
+      q: 'Đạo hàm của hàm số f(x) = x³ là gì?',
+      a: ['3x²', 'x²', '3x', '2x³'],
+      c: 0,
+    },
+    {
+      q: 'Đạo hàm của sin(x) là?',
+      a: ['cos(x)', '-cos(x)', '-sin(x)', 'tan(x)'],
+      c: 0,
+    },
+    {
+      q: 'Đạo hàm của hằng số bằng?',
+      a: ['0', '1', 'Hằng số đó', 'Không xác định'],
+      c: 0,
+    },
+  ],
+  'Ma Trận': [
+    {
+      q: 'Ma trận đơn vị I có tính chất gì khi nhân với ma trận A?',
+      a: ['A·I = I·A = A', 'A·I = 0', 'A·I = I', 'A·I = A²'],
+      c: 0,
+    },
+    {
+      q: 'Ma trận chuyển vị của ma trận A ký hiệu là?',
+      a: ['Aᵀ', 'A⁻¹', '|A|', 'A*'],
+      c: 0,
+    },
+    {
+      q: 'Ma trận có định thức bằng 0 được gọi là?',
+      a: ['Ma trận suy biến', 'Ma trận đơn vị', 'Ma trận vuông', 'Ma trận chuyển vị'],
+      c: 0,
+    },
+  ],
+  'Số Phức': [
+    {
+      q: 'Số phức z = a + bi có môđun là gì?',
+      a: ['√(a² + b²)', 'a + b', 'a² + b²', '√(a - b)'],
+      c: 0,
+    },
+    {
+      q: 'i² bằng bao nhiêu?',
+      a: ['-1', '1', '0', 'i'],
+      c: 0,
+    },
+    {
+      q: 'Số phức liên hợp của z = a + bi là?',
+      a: ['a - bi', '-a + bi', '-a - bi', 'b + ai'],
+      c: 0,
+    },
+  ],
+  'Tổ Hợp': [
+    {
+      q: 'Công thức tổ hợp chập k của n phần tử C(n,k) bằng gì?',
+      a: ['n! / (k!(n-k)!)', 'n! / k!', 'n × k', '(n-k)! / k!'],
+      c: 0,
+    },
+    {
+      q: 'Số chỉnh hợp chập k của n phần tử A(n,k) bằng?',
+      a: ['n! / (n-k)!', 'n! / k!', 'n! / (k!(n-k)!)', 'n × k'],
+      c: 0,
+    },
+    {
+      q: 'Số hoán vị của n phần tử bằng?',
+      a: ['n!', 'n²', '2ⁿ', 'n × (n-1)'],
+      c: 0,
+    },
+  ],
+  'Giải Tích': [
+    {
+      q: 'Tích phân ∫x dx bằng gì?',
+      a: ['x²/2 + C', 'x² + C', '2x + C', 'x/2 + C'],
+      c: 0,
+    },
+    {
+      q: 'Tích phân ∫cos(x) dx bằng?',
+      a: ['sin(x) + C', '-sin(x) + C', 'cos(x) + C', '-cos(x) + C'],
+      c: 0,
+    },
+    {
+      q: 'lim(x→0) sin(x)/x bằng?',
+      a: ['1', '0', '∞', 'Không xác định'],
+      c: 0,
+    },
+  ],
 }
 
 interface PlanetConfig {
@@ -98,9 +194,11 @@ export default function App() {
   )
   const [warp, setWarp] = useState(false)
   const [answered, setAnswered] = useState<number | null>(null)
+  const [questionIdx, setQuestionIdx] = useState(0)
   const [stamina, setStamina] = useState(STAMINA_MAX)
   const [zoom, setZoom] = useState(1)
   const [conqueredPlanets, setConqueredPlanets] = useState<Set<string>>(new Set())
+  const [planetProgress, setPlanetProgress] = useState<Record<string, number>>({})
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const lastRegenTime = useRef(Date.now())
@@ -119,7 +217,10 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (view === 'space') setAnswered(null)
+    if (view === 'space') {
+      setAnswered(null)
+      setQuestionIdx(0)
+    }
   }, [view])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -133,6 +234,18 @@ export default function App() {
   function zoomOut() { setZoom(z => Math.max(0.4, z - 0.2)) }
 
   function flyTo(planet: PlanetConfig, idx: number) {
+    const tasks = data[planet.name]
+    const savedProgress = planetProgress[planet.name] ?? 0
+    const startQ = savedProgress >= tasks.length ? 0 : savedProgress
+
+    if (idx === currentPlanetIdx) {
+      setAiMessage(`📍 Bạn đang ở **${planet.label}**. Mở nhiệm vụ ngay!`)
+      setQuestionIdx(startQ)
+      setCurrentPlanet(planet)
+      setView('mission')
+      return
+    }
+
     const cost = calcCost(currentPlanetIdx, idx)
     if (stamina < cost) {
       setAiMessage(`⚠️ **KHÔNG ĐỦ THỂ LỰC!** Cần ${cost} PP để tới **${planet.label}** nhưng chỉ còn ${stamina} PP. Hãy nghỉ ngơi để hồi phục (10 PP / 5 phút)!`)
@@ -142,6 +255,7 @@ export default function App() {
     setAiMessage(`🚀 **KHAI HỎA!** Tiêu tốn ${cost} PP. Tên lửa đang phóng hướng **Hành tinh ${planet.label}**...`)
     setWarp(true)
     setCurrentPlanetIdx(idx)
+    setQuestionIdx(startQ)
     setTimeout(() => {
       setWarp(false)
       setCurrentPlanet(planet)
@@ -151,15 +265,35 @@ export default function App() {
 
   function check(sel: number, cor: number) {
     setAnswered(sel)
+    if (!currentPlanet) return
+    const tasks = data[currentPlanet.name]
+    const isLast = questionIdx >= tasks.length - 1
     if (sel === cor) {
-      setAiMessage('🎉 **XUẤT SẮC!** Hành tinh đã được chinh phục! Kiến thức đã được ghi vào bản đồ vũ trụ.')
-      if (currentPlanet) setConqueredPlanets(prev => new Set([...prev, currentPlanet.name]))
+      if (isLast) {
+        setAiMessage(`🎉 **CHINH PHỤC!** Hoàn thành toàn bộ ${tasks.length} câu hỏi của hành tinh ${currentPlanet.label}!`)
+        setConqueredPlanets(prev => new Set([...prev, currentPlanet.name]))
+        setPlanetProgress(prev => ({ ...prev, [currentPlanet.name]: tasks.length }))
+      } else {
+        setAiMessage(`✅ **ĐÚNG!** Câu ${questionIdx + 1}/${tasks.length} hoàn thành. Tiếp tục câu kế tiếp!`)
+        setPlanetProgress(prev => ({ ...prev, [currentPlanet.name]: questionIdx + 1 }))
+      }
     } else {
-      setAiMessage('⚠️ **HARD SPOT!** Trợ lý AI phát hiện điểm nghẽn. Kích hoạt **CÂU TƯƠNG ĐƯƠNG** để bẻ gãy tư duy cũ!')
+      setAiMessage('⚠️ **HARD SPOT!** Trợ lý AI phát hiện điểm nghẽn. Hãy thử lại!')
     }
   }
 
-  const task = currentPlanet ? data[currentPlanet.name] : null
+  function nextQuestion() {
+    setAnswered(null)
+    setQuestionIdx(i => i + 1)
+  }
+
+  function retryQuestion() {
+    setAnswered(null)
+  }
+
+  const tasks = currentPlanet ? data[currentPlanet.name] : null
+  const task = tasks ? tasks[questionIdx] : null
+  const isLastQuestion = tasks ? questionIdx >= tasks.length - 1 : false
   const staminaPct = (stamina / STAMINA_MAX) * 100
   const staminaColor = staminaPct > 60 ? 'from-cyan-500 to-emerald-400' : staminaPct > 30 ? 'from-yellow-500 to-orange-400' : 'from-red-600 to-red-400'
 
@@ -346,7 +480,7 @@ export default function App() {
         </main>
       )}
 
-      {view === 'mission' && currentPlanet && task && (
+      {view === 'mission' && currentPlanet && task && tasks && (
         <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto p-6 flex flex-col md:flex-row items-center justify-center gap-8 overflow-auto">
           <div className="flex flex-col items-center">
             {currentPlanet.type === 'video' ? (
@@ -378,6 +512,27 @@ export default function App() {
           </div>
 
           <div className="flex-1 bg-slate-900/90 border border-purple-900 p-6 rounded-2xl shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">
+                Câu {questionIdx + 1} / {tasks.length}
+              </span>
+              <div className="flex gap-1">
+                {tasks.map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-1.5 rounded-full transition-all"
+                    style={{
+                      width: i === questionIdx ? '24px' : '12px',
+                      background: i < questionIdx
+                        ? '#10b981'
+                        : i === questionIdx
+                          ? currentPlanet.color
+                          : 'rgba(255,255,255,0.15)',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
             <h3 className="text-sm md:text-base font-semibold mb-6 text-slate-200">{task.q}</h3>
             <div className="space-y-3">
               {task.a.map((opt, i) => {
@@ -401,12 +556,30 @@ export default function App() {
               })}
             </div>
             {answered !== null && (
-              <button
-                onClick={() => setView('space')}
-                className="mt-6 w-full p-3 bg-cyan-800 border border-cyan-500 rounded-xl text-xs font-bold text-cyan-200 hover:bg-cyan-700 transition"
-              >
-                ← Quay về bản đồ
-              </button>
+              <div className="mt-6 flex gap-3">
+                {answered === task.c && !isLastQuestion && (
+                  <button
+                    onClick={nextQuestion}
+                    className="flex-1 p-3 bg-emerald-800 border border-emerald-500 rounded-xl text-xs font-bold text-emerald-200 hover:bg-emerald-700 transition"
+                  >
+                    Câu kế tiếp →
+                  </button>
+                )}
+                {answered !== task.c && (
+                  <button
+                    onClick={retryQuestion}
+                    className="flex-1 p-3 bg-amber-800 border border-amber-500 rounded-xl text-xs font-bold text-amber-200 hover:bg-amber-700 transition"
+                  >
+                    🔄 Thử lại
+                  </button>
+                )}
+                <button
+                  onClick={() => setView('space')}
+                  className="flex-1 p-3 bg-cyan-800 border border-cyan-500 rounded-xl text-xs font-bold text-cyan-200 hover:bg-cyan-700 transition"
+                >
+                  ← Bản đồ
+                </button>
+              </div>
             )}
           </div>
         </main>
