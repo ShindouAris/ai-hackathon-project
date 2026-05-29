@@ -2,8 +2,17 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAIStream } from './hooks/useAIStream'
 import { useAutoScroll } from './hooks/useAutoScroll'
 import { streamExplain, streamHint, generateQuestion } from './services/aiService'
+import {
+  addToBank,
+  getAllBank,
+  getBankByTopic,
+  bankStats,
+  clearAllBank,
+  type BankEntry,
+} from './services/questionBank'
 import { ChatBox } from './components/ChatBox'
 import { Markdown } from './components/Markdown'
+import { FollowUpChat } from './components/FollowUpChat'
 
 type PlanetName = 'Xác Suất' | 'Đại Số' | 'Hình Học' | 'Vi Tích Phân' | 'Ma Trận' | 'Số Phức' | 'Tổ Hợp' | 'Giải Tích'
 type View = 'space' | 'info' | 'mission'
@@ -363,7 +372,15 @@ export default function App() {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const [hintAttempt, setHintAttempt] = useState(0)
   const [generatingQuestion, setGeneratingQuestion] = useState(false)
-  const [aiQuestions, setAiQuestions] = useState<Record<string, Task[]>>({})
+  const [aiQuestions, setAiQuestions] = useState<Record<string, Task[]>>(() => {
+    const all = getAllBank()
+    const out: Record<string, Task[]> = {}
+    for (const [topic, list] of Object.entries(all)) {
+      out[topic] = list.map(e => ({ q: e.q, a: e.a, c: e.c, explain: e.explain }))
+    }
+    return out
+  })
+  const [bankInfo, setBankInfo] = useState(() => bankStats())
 
   const explainAI = useAIStream(streamExplain, { debounceMs: 400, cooldownMs: 1500 })
   const hintAI = useAIStream(streamHint, { debounceMs: 400, cooldownMs: 2500 })
@@ -483,7 +500,7 @@ export default function App() {
     })
   }
 
-  async function handleGenerateAIQuestion() {
+  async function handleGenerateAIQuestion(opts: { forceFresh?: boolean } = {}) {
     if (!currentPlanet) return
 
     if (generateDebounceRef.current) {
@@ -491,6 +508,31 @@ export default function App() {
       generateDebounceRef.current = null
     }
     generateAbortRef.current?.abort()
+
+    const planet = currentPlanet
+    const existing = getTasks(planet.name)
+    const seenSet = new Set(existing.map(t => t.q.trim().replace(/\s+/g, ' ').toLowerCase()))
+
+    if (!opts.forceFresh) {
+      const cached = getBankByTopic(planet.name).filter(
+        e => !seenSet.has(e.q.trim().replace(/\s+/g, ' ').toLowerCase())
+      )
+      if (cached.length > 0) {
+        const pick = cached[Math.floor(Math.random() * cached.length)]
+        const newTask: Task = { q: pick.q, a: pick.a, c: pick.c, explain: pick.explain }
+        setAiQuestions(prev => ({
+          ...prev,
+          [planet.name]: [...(prev[planet.name] ?? []), newTask],
+        }))
+        setQuestionIdx(existing.length)
+        setAnswered(null)
+        explainAI.reset()
+        hintAI.reset()
+        setHintAttempt(0)
+        setAiMessage(`📦 **CÂU HỎI TỪ KHO** (đã lưu trước đó). Tiết kiệm token AI!`)
+        return
+      }
+    }
 
     const sinceLast = Date.now() - lastGenerateAtRef.current
     const cooldown = 4000
@@ -505,9 +547,7 @@ export default function App() {
       generateAbortRef.current = controller
       lastGenerateAtRef.current = Date.now()
 
-      const planet = currentPlanet
       try {
-        const existing = getTasks(planet.name)
         const generated = await generateQuestion(
           {
             topic: planet.name,
@@ -523,6 +563,14 @@ export default function App() {
           c: generated.correctIndex,
           explain: generated.explanation,
         }
+        const entry: BankEntry = {
+          ...newTask,
+          topic: planet.name,
+          difficulty: planet.difficulty,
+          createdAt: Date.now(),
+        }
+        const added = addToBank(entry)
+        setBankInfo(bankStats())
         setAiQuestions(prev => ({
           ...prev,
           [planet.name]: [...(prev[planet.name] ?? []), newTask],
@@ -532,7 +580,11 @@ export default function App() {
         explainAI.reset()
         hintAI.reset()
         setHintAttempt(0)
-        setAiMessage(`✨ **CÂU HỎI MỚI** từ AI đã sẵn sàng. Chinh phục thử thách bonus!`)
+        setAiMessage(
+          added
+            ? `✨ **CÂU HỎI MỚI** từ AI đã sẵn sàng và được lưu vào kho. Chinh phục thử thách bonus!`
+            : `✨ **CÂU HỎI MỚI** đã sẵn sàng (trùng với kho cũ, không lưu lại).`
+        )
       } catch (e) {
         if (controller.signal.aborted) return
         if (e instanceof Error && e.name === 'AbortError') return
@@ -542,6 +594,14 @@ export default function App() {
         if (!controller.signal.aborted) setGeneratingQuestion(false)
       }
     }, wait)
+  }
+
+  function handleClearBank() {
+    if (!confirm('Xoá toàn bộ kho câu hỏi AI đã lưu?')) return
+    clearAllBank()
+    setAiQuestions({})
+    setBankInfo(bankStats())
+    setAiMessage('🗑️ Đã xoá kho câu hỏi AI.')
   }
 
   function nextQuestion() {
@@ -586,21 +646,39 @@ export default function App() {
           <h1 className="text-sm font-bold text-cyan-400 tracking-widest uppercase">GALAXYLEARN 2030</h1>
           <p className="text-[9px] text-slate-400">Ngân Hà Toán Học — Hệ thống thám hiểm LHU</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className="w-44 md:w-64 bg-slate-900 rounded-full h-4 border border-cyan-500/30 overflow-hidden relative">
-            <div
-              className={`h-full bg-gradient-to-r ${staminaColor} transition-all duration-1000`}
-              style={{ width: `${staminaPct}%` }}
-            />
-            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-950">
-              Thể lực: {stamina}/{STAMINA_MAX} PP
-            </span>
+        <div className="flex items-center gap-3">
+          {bankInfo.total > 0 && (
+            <button
+              onClick={handleClearBank}
+              className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/80 border border-violet-500/30 hover:border-violet-400 hover:bg-violet-950/40 transition group"
+              title={`Kho câu hỏi AI: ${bankInfo.total} câu / ${bankInfo.topics} chủ đề. Click để xoá toàn bộ.`}
+            >
+              <span className="text-base leading-none">📦</span>
+              <div className="text-left">
+                <p className="text-[8px] uppercase text-violet-400 font-bold leading-tight">Kho AI</p>
+                <p className="text-[10px] font-bold text-violet-200 leading-tight">
+                  {bankInfo.total} câu
+                </p>
+              </div>
+              <span className="text-[10px] text-slate-500 group-hover:text-red-400 transition">🗑️</span>
+            </button>
+          )}
+          <div className="flex flex-col items-end gap-1">
+            <div className="w-44 md:w-64 bg-slate-900 rounded-full h-4 border border-cyan-500/30 overflow-hidden relative">
+              <div
+                className={`h-full bg-gradient-to-r ${staminaColor} transition-all duration-1000`}
+                style={{ width: `${staminaPct}%` }}
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-950">
+                Thể lực: {stamina}/{STAMINA_MAX} PP
+              </span>
+            </div>
+            <p className="text-[8px] text-slate-500">
+              {stamina < STAMINA_MAX
+                ? `+10 PP sau ${regenMin}:${String(regenSec).padStart(2, '0')}`
+                : 'Đầy năng lượng'}
+            </p>
           </div>
-          <p className="text-[8px] text-slate-500">
-            {stamina < STAMINA_MAX
-              ? `+10 PP sau ${regenMin}:${String(regenSec).padStart(2, '0')}`
-              : 'Đầy năng lượng'}
-          </p>
         </div>
       </header>
 
@@ -1039,6 +1117,16 @@ export default function App() {
                     <span className="inline-block w-2 h-3 ml-1 bg-purple-400 animate-pulse align-middle" />
                   )}
                 </div>
+                {!explainAI.isStreaming && (
+                  <FollowUpChat
+                    question={task.q}
+                    options={task.a}
+                    correctIndex={task.c}
+                    userAnswerIndex={answered}
+                    baseExplanation={explainAI.text || task.explain}
+                    resetKey={`${currentPlanet.name}-${questionIdx}`}
+                  />
+                )}
               </div>
             )}
             {answered !== null && answered !== task.c && hintAI.text && (
@@ -1075,11 +1163,25 @@ export default function App() {
                 )}
                 {answered === task.c && isLastQuestion && (
                   <button
-                    onClick={handleGenerateAIQuestion}
+                    onClick={() => handleGenerateAIQuestion()}
                     disabled={generatingQuestion}
                     className="flex-1 min-w-[140px] p-3 bg-violet-900 border border-violet-500 rounded-xl text-xs font-bold text-violet-200 hover:bg-violet-800 transition disabled:opacity-50"
+                    title={
+                      bankInfo.byTopic[currentPlanet.name]
+                        ? `Kho có ${bankInfo.byTopic[currentPlanet.name]} câu cho ${currentPlanet.name}`
+                        : 'Chưa có câu nào trong kho'
+                    }
                   >
-                    {generatingQuestion ? '🛰️ AI đang sinh...' : '✨ Câu hỏi AI bonus'}
+                    {generatingQuestion ? '🛰️ AI đang sinh...' : '✨ Câu hỏi bonus'}
+                  </button>
+                )}
+                {answered === task.c && isLastQuestion && !generatingQuestion && (
+                  <button
+                    onClick={() => handleGenerateAIQuestion({ forceFresh: true })}
+                    className="min-w-[40px] p-3 bg-slate-800 border border-violet-500/40 rounded-xl text-xs font-bold text-violet-300 hover:bg-violet-900/40 transition"
+                    title="Bỏ qua kho, sinh câu hoàn toàn mới"
+                  >
+                    🔄
                   </button>
                 )}
                 {answered === task.c && !isLastQuestion && (
