@@ -17,6 +17,7 @@ export interface ExplainRequest {
   correctIndex: number
   userAnswerIndex?: number | null
   userName?: string | null
+  hideAnswer?: boolean
 }
 
 export interface HintRequest extends ExplainRequest {

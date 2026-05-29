@@ -790,7 +790,7 @@ export default function App() {
   const [aiMessage, setAiMessage] = useState(
     'Chào chỉ huy! Hệ thống sẵn sàng. Trái Đất là điểm xuất phát — càng xa càng tốn thể lực. Chọn hành tinh để bắt đầu thám hiểm!'
   )
-  const [warp, setWarp] = useState(false)
+  const [, setWarp] = useState(false)
   const [answered, setAnswered] = useState<number | null>(null)
   const [questionIdx, setQuestionIdx] = useState(0)
   const [stamina, setStamina] = useState(() => {
@@ -1054,6 +1054,7 @@ export default function App() {
         correctIndex: task.c,
         userAnswerIndex: sel,
         userName,
+        hideAnswer: true,
       })
     } else {
       explainAI.reset()
@@ -1721,7 +1722,7 @@ export default function App() {
                 let btnClass =
                   'w-full p-3 bg-slate-800 border border-purple-700 rounded-xl text-left text-xs hover:bg-purple-900 transition'
                 if (answered !== null) {
-                  if (i === task.c) btnClass += ' !bg-emerald-900 !border-emerald-500'
+                  if (answered === task.c && i === task.c) btnClass += ' !bg-emerald-900 !border-emerald-500'
                   else if (i === answered && answered !== task.c)
                     btnClass += ' !bg-red-900 !border-red-500'
                 }
@@ -1751,7 +1752,7 @@ export default function App() {
                       answered === task.c ? 'text-emerald-400' : 'text-amber-400'
                     }`}
                   >
-                    {answered === task.c ? '💡 Giải thích AI' : '📖 Đáp án đúng + Giải thích AI'}
+                    {answered === task.c ? '💡 Giải thích AI' : '🔍 Phân tích lỗi sai (AI)'}
                   </p>
                   {explainAI.isStreaming && (
                     <span className="text-[9px] text-purple-300 animate-pulse flex items-center gap-1">
@@ -1761,9 +1762,8 @@ export default function App() {
                   )}
                 </div>
                 {answered !== task.c && (
-                  <p className="text-xs text-slate-300 mb-2">
-                    <span className="text-emerald-400 font-bold">→ </span>
-                    {task.a[task.c]}
+                  <p className="text-xs text-amber-300/90 mb-2 italic">
+                    Đáp án đúng đang được giấu — hãy phân tích phần giải thích bên dưới rồi <span className="font-bold">Thử lại</span> nhé!
                   </p>
                 )}
                 <div
