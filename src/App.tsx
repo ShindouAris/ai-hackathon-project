@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAIStream } from './hooks/useAIStream'
+import { useAutoScroll } from './hooks/useAutoScroll'
 import { streamExplain, streamHint, generateQuestion } from './services/aiService'
+import { ChatBox } from './components/ChatBox'
+import { Markdown } from './components/Markdown'
 
 type PlanetName = 'Xác Suất' | 'Đại Số' | 'Hình Học' | 'Vi Tích Phân' | 'Ma Trận' | 'Số Phức' | 'Tổ Hợp' | 'Giải Tích'
 type View = 'space' | 'info' | 'mission'
@@ -364,6 +367,12 @@ export default function App() {
 
   const explainAI = useAIStream(streamExplain, { debounceMs: 400, cooldownMs: 1500 })
   const hintAI = useAIStream(streamHint, { debounceMs: 400, cooldownMs: 2500 })
+  const explainScrollRef = useAutoScroll<HTMLDivElement>(explainAI.text, {
+    active: explainAI.isStreaming,
+  })
+  const hintScrollRef = useAutoScroll<HTMLDivElement>(hintAI.text, {
+    active: hintAI.isStreaming,
+  })
   const generateAbortRef = useRef<AbortController | null>(null)
   const generateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastGenerateAtRef = useRef(0)
@@ -1015,14 +1024,21 @@ export default function App() {
                     {task.a[task.c]}
                   </p>
                 )}
-                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  {explainAI.error
-                    ? `⚠️ AI lỗi: ${explainAI.error.message}. Giải thích dự phòng: ${task.explain}`
-                    : explainAI.text || (explainAI.isStreaming ? '' : task.explain)}
+                <div
+                  ref={explainScrollRef}
+                  className="ai-stream-scroll text-xs text-slate-300 leading-relaxed max-h-56 md:max-h-64 overflow-y-auto pr-2 -mr-1"
+                >
+                  {explainAI.error ? (
+                    <Markdown>{`⚠️ AI lỗi: ${explainAI.error.message}.\n\n**Giải thích dự phòng:** ${task.explain}`}</Markdown>
+                  ) : explainAI.text ? (
+                    <Markdown>{explainAI.text}</Markdown>
+                  ) : explainAI.isStreaming ? null : (
+                    <Markdown>{task.explain}</Markdown>
+                  )}
                   {explainAI.isStreaming && (
                     <span className="inline-block w-2 h-3 ml-1 bg-purple-400 animate-pulse align-middle" />
                   )}
-                </p>
+                </div>
               </div>
             )}
             {answered !== null && answered !== task.c && hintAI.text && (
@@ -1035,12 +1051,15 @@ export default function App() {
                     <span className="text-[9px] text-purple-300 animate-pulse">streaming...</span>
                   )}
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  {hintAI.text}
+                <div
+                  ref={hintScrollRef}
+                  className="ai-stream-scroll text-xs text-slate-300 leading-relaxed max-h-40 md:max-h-48 overflow-y-auto pr-2 -mr-1"
+                >
+                  <Markdown>{hintAI.text}</Markdown>
                   {hintAI.isStreaming && (
                     <span className="inline-block w-2 h-3 ml-1 bg-purple-400 animate-pulse align-middle" />
                   )}
-                </p>
+                </div>
               </div>
             )}
             {answered !== null && (
@@ -1102,6 +1121,14 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      <ChatBox
+        context={
+          currentPlanet
+            ? `Người học đang khám phá hành tinh "${currentPlanet.name}" (chủ đề: ${currentPlanet.topics?.join(', ') ?? currentPlanet.name}, độ khó ${currentPlanet.difficulty}/8). Đã chinh phục ${conqueredPlanets.size}/${planets.length} hành tinh, còn ${stamina}/${STAMINA_MAX} PP thể lực.`
+            : `Người học đang ở bản đồ ngân hà. Đã chinh phục ${conqueredPlanets.size}/${planets.length} hành tinh, còn ${stamina}/${STAMINA_MAX} PP thể lực.`
+        }
+      />
     </div>
   )
 }

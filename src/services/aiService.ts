@@ -22,6 +22,15 @@ export interface HintRequest extends ExplainRequest {
   attempt?: number
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
+
+export interface ChatRequest {
+  messages: ChatMessage[]
+}
+
 const API_BASE = '/api/ai'
 
 export class AIAbortError extends Error {
@@ -60,6 +69,13 @@ export async function* streamHint(
   signal?: AbortSignal
 ): AsyncGenerator<string> {
   yield* streamPost(`${API_BASE}/hint`, req, signal)
+}
+
+export async function* streamChat(
+  req: ChatRequest,
+  signal?: AbortSignal
+): AsyncGenerator<string> {
+  yield* streamPost(`${API_BASE}/chat`, req, signal)
 }
 
 async function* streamPost(
