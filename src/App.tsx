@@ -176,7 +176,7 @@ const planets: PlanetConfig[] = [
 ]
 
 const STAMINA_MAX = 180
-const REGEN_INTERVAL_MS = 5 * 60 * 1000
+const REGEN_INTERVAL_MS = 1 * 60 * 1000
 const REGEN_AMOUNT = 10
 const BASE_COST = 15
 
@@ -185,23 +185,71 @@ function calcCost(fromIdx: number, toIdx: number): number {
   return BASE_COST + dist * 12
 }
 
+const STORAGE_KEY = 'galaxylearn-state-v1'
+
+interface PersistedState {
+  currentPlanetIdx: number
+  stamina: number
+  zoom: number
+  conqueredPlanets: string[]
+  planetProgress: Record<string, number>
+  lastRegenTime: number
+}
+
+function loadState(): Partial<PersistedState> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return {}
+    return JSON.parse(raw)
+  } catch {
+    return {}
+  }
+}
+
 export default function App() {
+  const saved = loadState()
+
   const [view, setView] = useState<View>('space')
   const [currentPlanet, setCurrentPlanet] = useState<PlanetConfig | null>(null)
-  const [currentPlanetIdx, setCurrentPlanetIdx] = useState<number>(planets.length)
+  const [currentPlanetIdx, setCurrentPlanetIdx] = useState<number>(saved.currentPlanetIdx ?? planets.length)
   const [aiMessage, setAiMessage] = useState(
     'Chào chỉ huy! Hệ thống sẵn sàng. Trái Đất là điểm xuất phát — càng xa càng tốn thể lực. Chọn hành tinh để bắt đầu thám hiểm!'
   )
   const [warp, setWarp] = useState(false)
   const [answered, setAnswered] = useState<number | null>(null)
   const [questionIdx, setQuestionIdx] = useState(0)
-  const [stamina, setStamina] = useState(STAMINA_MAX)
-  const [zoom, setZoom] = useState(1)
-  const [conqueredPlanets, setConqueredPlanets] = useState<Set<string>>(new Set())
-  const [planetProgress, setPlanetProgress] = useState<Record<string, number>>({})
+  const [stamina, setStamina] = useState(() => {
+    if (saved.stamina == null || saved.lastRegenTime == null) return STAMINA_MAX
+    const elapsed = Date.now() - saved.lastRegenTime
+    const ticks = Math.floor(elapsed / REGEN_INTERVAL_MS)
+    return Math.min(STAMINA_MAX, saved.stamina + ticks * REGEN_AMOUNT)
+  })
+  const [zoom, setZoom] = useState(saved.zoom ?? 1)
+  const [conqueredPlanets, setConqueredPlanets] = useState<Set<string>>(
+    new Set(saved.conqueredPlanets ?? [])
+  )
+  const [planetProgress, setPlanetProgress] = useState<Record<string, number>>(
+    saved.planetProgress ?? {}
+  )
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const lastRegenTime = useRef(Date.now())
+  const lastRegenTime = useRef(saved.lastRegenTime ?? Date.now())
+
+  useEffect(() => {
+    const data: PersistedState = {
+      currentPlanetIdx,
+      stamina,
+      zoom,
+      conqueredPlanets: Array.from(conqueredPlanets),
+      planetProgress,
+      lastRegenTime: lastRegenTime.current,
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    } catch {
+      // ignore quota errors
+    }
+  }, [currentPlanetIdx, stamina, zoom, conqueredPlanets, planetProgress])
 
   useEffect(() => {
     const interval = setInterval(() => {
