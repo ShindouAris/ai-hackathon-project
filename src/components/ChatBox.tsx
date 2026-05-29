@@ -4,14 +4,17 @@ import { Markdown } from './Markdown'
 
 interface ChatBoxProps {
   context?: string
+  userName?: string | null
 }
 
-export function ChatBox({ context }: ChatBoxProps) {
+export function ChatBox({ context, userName }: ChatBoxProps) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: 'Chào chỉ huy! 🚀 Tôi là Trợ Lý Không Gian. Hỏi tôi bất cứ điều gì về toán học hoặc chiến lược chinh phục các hành tinh nhé!',
+      content: userName
+        ? `Chào ${userName}! 🚀 Tôi là Trợ Lý Không Gian. Hỏi tôi bất cứ điều gì về toán học hoặc chiến lược chinh phục các hành tinh nhé!`
+        : 'Chào chỉ huy! 🚀 Tôi là Trợ Lý Không Gian. Hỏi tôi bất cứ điều gì về toán học hoặc chiến lược chinh phục các hành tinh nhé!',
     },
   ])
   const [input, setInput] = useState('')
@@ -71,7 +74,7 @@ export function ChatBox({ context }: ChatBoxProps) {
 
         let acc = ''
         try {
-          for await (const chunk of streamChat({ messages: history }, controller.signal)) {
+          for await (const chunk of streamChat({ messages: history, userName }, controller.signal)) {
             if (controller.signal.aborted || !mountedRef.current) return
             acc += chunk
             setStreamingText(acc)
@@ -95,7 +98,7 @@ export function ChatBox({ context }: ChatBoxProps) {
         }
       }, wait)
     },
-    [messages, streaming, context]
+    [messages, streaming, context, userName]
   )
 
   function handleSubmit(e: FormEvent) {

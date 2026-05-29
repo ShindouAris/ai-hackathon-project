@@ -10,9 +10,21 @@ import {
   clearAllBank,
   type BankEntry,
 } from './services/questionBank'
+import {
+  loadProfile,
+  saveProfile,
+  clearProfile,
+  type UserProfile,
+} from './services/userProfile'
+import {
+  getLevelInfo,
+  staminaMaxForLevel,
+  levelFromCorrect,
+} from './services/leveling'
 import { ChatBox } from './components/ChatBox'
 import { Markdown } from './components/Markdown'
 import { FollowUpChat } from './components/FollowUpChat'
+import { NameModal } from './components/NameModal'
 
 type PlanetName = 'Xác Suất' | 'Đại Số' | 'Hình Học' | 'Vi Tích Phân' | 'Ma Trận' | 'Số Phức' | 'Tổ Hợp' | 'Giải Tích'
 type View = 'space' | 'info' | 'mission'
@@ -256,7 +268,6 @@ const planets: PlanetConfig[] = [
   },
 ]
 
-const STAMINA_MAX = 180
 const REGEN_INTERVAL_MS = 1 * 60 * 1000
 const REGEN_AMOUNT = 10
 const BASE_COST = 15
@@ -275,6 +286,8 @@ interface PersistedState {
   conqueredPlanets: string[]
   planetProgress: Record<string, number>
   lastRegenTime: number
+  totalCorrect: number
+  answeredQuestionIds: string[]
 }
 
 function loadState(): Partial<PersistedState> {
@@ -300,10 +313,11 @@ export default function App() {
   const [answered, setAnswered] = useState<number | null>(null)
   const [questionIdx, setQuestionIdx] = useState(0)
   const [stamina, setStamina] = useState(() => {
-    if (saved.stamina == null || saved.lastRegenTime == null) return STAMINA_MAX
+    const initialMax = staminaMaxForLevel(levelFromCorrect(saved.totalCorrect ?? 0))
+    if (saved.stamina == null || saved.lastRegenTime == null) return initialMax
     const elapsed = Date.now() - saved.lastRegenTime
     const ticks = Math.floor(elapsed / REGEN_INTERVAL_MS)
-    return Math.min(STAMINA_MAX, saved.stamina + ticks * REGEN_AMOUNT)
+    return Math.min(initialMax, saved.stamina + ticks * REGEN_AMOUNT)
   })
   const [zoom, setZoom] = useState(saved.zoom ?? 1)
   const [conqueredPlanets, setConqueredPlanets] = useState<Set<string>>(
@@ -312,6 +326,14 @@ export default function App() {
   const [planetProgress, setPlanetProgress] = useState<Record<string, number>>(
     saved.planetProgress ?? {}
   )
+  const [totalCorrect, setTotalCorrect] = useState<number>(saved.totalCorrect ?? 0)
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(
+    new Set(saved.answeredQuestionIds ?? [])
+  )
+  const [levelUpFlash, setLevelUpFlash] = useState<{ from: number; to: number } | null>(null)
+
+  const levelInfo = getLevelInfo(totalCorrect)
+  const dynamicStaminaMax = levelInfo.staminaMax
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const lastRegenTime = useRef(saved.lastRegenTime ?? Date.now())
@@ -324,13 +346,15 @@ export default function App() {
       conqueredPlanets: Array.from(conqueredPlanets),
       planetProgress,
       lastRegenTime: lastRegenTime.current,
+      totalCorrect,
+      answeredQuestionIds: Array.from(answeredQuestionIds),
     }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } catch {
       // ignore quota errors
     }
-  }, [currentPlanetIdx, stamina, zoom, conqueredPlanets, planetProgress])
+  }, [currentPlanetIdx, stamina, zoom, conqueredPlanets, planetProgress, totalCorrect, answeredQuestionIds])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -339,9 +363,9 @@ export default function App() {
       if (elapsed >= REGEN_INTERVAL_MS) {
         const ticks = Math.floor(elapsed / REGEN_INTERVAL_MS)
         setStamina(s => {
-          const next = Math.min(STAMINA_MAX, s + ticks * REGEN_AMOUNT)
+          const next = Math.min(dynamicStaminaMax, s + ticks * REGEN_AMOUNT)
           if (next !== s) {
-            console.log(`[REGEN] +${next - s} PP (${s} → ${next}/${STAMINA_MAX}) | ticks=${ticks}`)
+            console.log(`[REGEN] +${next - s} PP (${s} → ${next}/${dynamicStaminaMax}) | ticks=${ticks}`)
           }
           return next
         })
@@ -349,7 +373,7 @@ export default function App() {
       }
     }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [dynamicStaminaMax])
 
   const [, setNowTick] = useState(0)
   useEffect(() => {
@@ -381,6 +405,29 @@ export default function App() {
     return out
   })
   const [bankInfo, setBankInfo] = useState(() => bankStats())
+  const [profile, setProfile] = useState<UserProfile | null>(() => loadProfile())
+  const [showNameModal, setShowNameModal] = useState<'first' | 'edit' | null>(() =>
+    loadProfile() ? null : 'first'
+  )
+  const userName = profile?.name ?? null
+
+  function handleSaveName(name: string) {
+    const saved = saveProfile(name)
+    setProfile(saved)
+    setShowNameModal(null)
+    setAiMessage(`👋 Chào **${saved.name}**! Phi hành đoàn đã sẵn sàng. Chọn hành tinh để bắt đầu!`)
+  }
+
+  function handleSkipName() {
+    setShowNameModal(null)
+  }
+
+  function handleClearProfile() {
+    if (!confirm('Xoá tên đã lưu?')) return
+    clearProfile()
+    setProfile(null)
+    setAiMessage('👤 Đã xoá tên. Trợ lý sẽ gọi bạn là "chỉ huy".')
+  }
 
   const explainAI = useAIStream(streamExplain, { debounceMs: 400, cooldownMs: 1500 })
   const hintAI = useAIStream(streamHint, { debounceMs: 400, cooldownMs: 2500 })
@@ -464,7 +511,30 @@ export default function App() {
     if (!currentPlanet || !task) return
     const tasks = getTasks(currentPlanet.name)
     const isLast = questionIdx >= tasks.length - 1
+    const questionKey = `${currentPlanet.name}::${task.q}`
     if (sel === cor) {
+      const alreadyCounted = answeredQuestionIds.has(questionKey)
+      if (!alreadyCounted) {
+        setAnsweredQuestionIds(prev => {
+          const next = new Set(prev)
+          next.add(questionKey)
+          return next
+        })
+        setTotalCorrect(prev => {
+          const nextTotal = prev + 1
+          const prevLevel = levelFromCorrect(prev)
+          const nextLevel = levelFromCorrect(nextTotal)
+          if (nextLevel > prevLevel) {
+            const newMax = staminaMaxForLevel(nextLevel)
+            const oldMax = staminaMaxForLevel(prevLevel)
+            const bonus = newMax - oldMax
+            setStamina(s => Math.min(newMax, s + bonus))
+            setLevelUpFlash({ from: prevLevel, to: nextLevel })
+            setTimeout(() => setLevelUpFlash(null), 4000)
+          }
+          return nextTotal
+        })
+      }
       if (isLast) {
         setAiMessage(`🎉 **CHINH PHỤC!** Hoàn thành toàn bộ ${tasks.length} câu hỏi của hành tinh ${currentPlanet.label}!`)
         setConqueredPlanets(prev => new Set([...prev, currentPlanet.name]))
@@ -478,12 +548,17 @@ export default function App() {
     }
     hintAI.reset()
     setHintAttempt(0)
-    explainAI.run({
-      question: task.q,
-      options: task.a,
-      correctIndex: task.c,
-      userAnswerIndex: sel,
-    })
+    if (sel !== cor) {
+      explainAI.run({
+        question: task.q,
+        options: task.a,
+        correctIndex: task.c,
+        userAnswerIndex: sel,
+        userName,
+      })
+    } else {
+      explainAI.reset()
+    }
   }
 
   function requestHint() {
@@ -497,6 +572,7 @@ export default function App() {
       correctIndex: task.c,
       userAnswerIndex: answered,
       attempt: next,
+      userName,
     })
   }
 
@@ -629,7 +705,7 @@ export default function App() {
   const tasks = currentPlanet ? getTasks(currentPlanet.name) : null
   const task = tasks ? tasks[questionIdx] : null
   const isLastQuestion = tasks ? questionIdx >= tasks.length - 1 : false
-  const staminaPct = (stamina / STAMINA_MAX) * 100
+  const staminaPct = (stamina / dynamicStaminaMax) * 100
   const staminaColor = staminaPct > 60 ? 'from-cyan-500 to-emerald-400' : staminaPct > 30 ? 'from-yellow-500 to-orange-400' : 'from-red-600 to-red-400'
 
   const PLANET_SPACING = Math.round(160 * zoom)
@@ -647,6 +723,51 @@ export default function App() {
           <p className="text-[9px] text-slate-400">Ngân Hà Toán Học — Hệ thống thám hiểm LHU</p>
         </div>
         <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-gradient-to-br from-amber-950/60 to-orange-950/60 border border-amber-500/40"
+            title={
+              levelInfo.isMax
+                ? `Cấp tối đa! Đã trả lời đúng ${totalCorrect} câu.`
+                : `Trả lời đúng ${levelInfo.correctIntoLevel}/${levelInfo.correctNeededForLevel} câu để lên Cấp ${levelInfo.level + 1}`
+            }
+          >
+            <span className="text-base leading-none">⭐</span>
+            <div className="text-left min-w-[56px]">
+              <p className="text-[8px] uppercase text-amber-400 font-bold leading-tight tracking-wider">Cấp</p>
+              <p className="text-[11px] font-bold text-amber-200 leading-tight">
+                {levelInfo.level}
+                {levelInfo.isMax && <span className="text-amber-400 ml-1">MAX</span>}
+              </p>
+            </div>
+            <div className="w-12 h-1 bg-slate-900/60 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-400 to-orange-400 transition-all"
+                style={{ width: `${levelInfo.progressPct}%` }}
+              />
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNameModal('edit')}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 hover:bg-cyan-950/40 transition group"
+            title={userName ? `Đổi tên (hiện tại: ${userName})` : 'Đặt tên để cá nhân hoá AI'}
+          >
+            <span className="text-base leading-none">{userName ? '👨‍🚀' : '👤'}</span>
+            <div className="text-left">
+              <p className="text-[8px] uppercase text-cyan-400 font-bold leading-tight">Chỉ huy</p>
+              <p className="text-[10px] font-bold text-cyan-200 leading-tight max-w-[80px] truncate">
+                {userName ?? 'Ẩn danh'}
+              </p>
+            </div>
+          </button>
+          {userName && (
+            <button
+              onClick={handleClearProfile}
+              className="hidden md:block text-[10px] text-slate-500 hover:text-red-400 transition px-1"
+              title="Xoá tên đã lưu"
+            >
+              ✕
+            </button>
+          )}
           {bankInfo.total > 0 && (
             <button
               onClick={handleClearBank}
@@ -670,11 +791,11 @@ export default function App() {
                 style={{ width: `${staminaPct}%` }}
               />
               <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-950">
-                Thể lực: {stamina}/{STAMINA_MAX} PP
+                Thể lực: {stamina}/{dynamicStaminaMax} PP
               </span>
             </div>
             <p className="text-[8px] text-slate-500">
-              {stamina < STAMINA_MAX
+              {stamina < dynamicStaminaMax
                 ? `+10 PP sau ${regenMin}:${String(regenSec).padStart(2, '0')}`
                 : 'Đầy năng lượng'}
             </p>
@@ -1125,6 +1246,7 @@ export default function App() {
                     userAnswerIndex={answered}
                     baseExplanation={explainAI.text || task.explain}
                     resetKey={`${currentPlanet.name}-${questionIdx}`}
+                    userName={userName}
                   />
                 )}
               </div>
@@ -1225,12 +1347,39 @@ export default function App() {
       </footer>
 
       <ChatBox
+        userName={userName}
         context={
           currentPlanet
-            ? `Người học đang khám phá hành tinh "${currentPlanet.name}" (chủ đề: ${currentPlanet.topics?.join(', ') ?? currentPlanet.name}, độ khó ${currentPlanet.difficulty}/8). Đã chinh phục ${conqueredPlanets.size}/${planets.length} hành tinh, còn ${stamina}/${STAMINA_MAX} PP thể lực.`
-            : `Người học đang ở bản đồ ngân hà. Đã chinh phục ${conqueredPlanets.size}/${planets.length} hành tinh, còn ${stamina}/${STAMINA_MAX} PP thể lực.`
+            ? `Người học đang khám phá hành tinh "${currentPlanet.name}" (chủ đề: ${currentPlanet.topics?.join(', ') ?? currentPlanet.name}, độ khó ${currentPlanet.difficulty}/8). Cấp độ ${levelInfo.level}, đã trả lời đúng ${totalCorrect} câu, đã chinh phục ${conqueredPlanets.size}/${planets.length} hành tinh, còn ${stamina}/${dynamicStaminaMax} PP thể lực.`
+            : `Người học đang ở bản đồ ngân hà. Cấp độ ${levelInfo.level}, đã trả lời đúng ${totalCorrect} câu, đã chinh phục ${conqueredPlanets.size}/${planets.length} hành tinh, còn ${stamina}/${dynamicStaminaMax} PP thể lực.`
         }
       />
+
+      {showNameModal && (
+        <NameModal
+          mode={showNameModal}
+          initialName={profile?.name ?? ''}
+          onSubmit={handleSaveName}
+          onSkip={showNameModal === 'first' ? handleSkipName : undefined}
+          onClose={showNameModal === 'edit' ? () => setShowNameModal(null) : undefined}
+        />
+      )}
+
+      {levelUpFlash && (
+        <div className="fixed inset-0 z-[90] flex items-start justify-center pt-24 pointer-events-none">
+          <div className="level-up-toast px-6 py-4 rounded-2xl bg-gradient-to-br from-amber-600 via-orange-500 to-pink-600 border-2 border-amber-300/80 shadow-2xl shadow-amber-900/60 text-center">
+            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-100">
+              Lên cấp!
+            </p>
+            <p className="text-2xl font-black text-white mt-1 tracking-wider">
+              ⭐ Cấp {levelUpFlash.from} → {levelUpFlash.to}
+            </p>
+            <p className="text-xs text-amber-50 mt-1.5">
+              Thể lực tối đa tăng lên <span className="font-bold">{staminaMaxForLevel(levelUpFlash.to)} PP</span>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -14,6 +14,8 @@ interface FollowUpChatProps {
   baseExplanation?: string
   /** Reset history khi key đổi (vd: chuyển câu). */
   resetKey?: string | number
+  /** Tên người học (cá nhân hoá). */
+  userName?: string | null
 }
 
 export function FollowUpChat({
@@ -23,6 +25,7 @@ export function FollowUpChat({
   userAnswerIndex,
   baseExplanation,
   resetKey,
+  userName,
 }: FollowUpChatProps) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -111,7 +114,7 @@ Yêu cầu:
         let acc = ''
         try {
           for await (const chunk of streamChat(
-            { messages: requestHistory },
+            { messages: requestHistory, userName },
             controller.signal
           )) {
             if (controller.signal.aborted || !mountedRef.current) return
@@ -137,7 +140,7 @@ Yêu cầu:
         }
       }, wait)
     },
-    [messages, streaming, buildSystem]
+    [messages, streaming, buildSystem, userName]
   )
 
   function handleSubmit(e: FormEvent) {

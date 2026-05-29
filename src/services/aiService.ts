@@ -16,6 +16,7 @@ export interface ExplainRequest {
   options: string[]
   correctIndex: number
   userAnswerIndex?: number | null
+  userName?: string | null
 }
 
 export interface HintRequest extends ExplainRequest {
@@ -29,6 +30,7 @@ export interface ChatMessage {
 
 export interface ChatRequest {
   messages: ChatMessage[]
+  userName?: string | null
 }
 
 const API_BASE = '/api/ai'
