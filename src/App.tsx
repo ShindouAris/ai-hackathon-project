@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 
 type PlanetName = 'Xác Suất' | 'Đại Số' | 'Hình Học' | 'Vi Tích Phân' | 'Ma Trận' | 'Số Phức' | 'Tổ Hợp' | 'Giải Tích'
-type View = 'space' | 'mission'
+type View = 'space' | 'info' | 'mission'
 
 interface Task {
   q: string
@@ -187,17 +187,59 @@ interface PlanetConfig {
   difficulty: number
   color: string
   x: number
+  description: string
+  topics: string[]
 }
 
 const planets: PlanetConfig[] = [
-  { name: 'Giải Tích',     glowClass: 'glow-giaitic',    type: 'div', label: 'GIẢI TÍCH',     labelColor: 'text-pink-400',    emoji: '∫',  difficulty: 8, color: '#ec4899', x: 50 },
-  { name: 'Số Phức',       glowClass: 'glow-sophuc',     type: 'div', label: 'SỐ PHỨC',       labelColor: 'text-violet-400',  emoji: 'ℂ',  difficulty: 7, color: '#8b5cf6', x: 25 },
-  { name: 'Tổ Hợp',        glowClass: 'glow-tohop',      type: 'div', label: 'TỔ HỢP',        labelColor: 'text-orange-400',  emoji: 'Cₙ', difficulty: 6, color: '#f97316', x: 70 },
-  { name: 'Ma Trận',       glowClass: 'glow-matran',     type: 'div', label: 'MA TRẬN',       labelColor: 'text-yellow-400',  emoji: '⊞',  difficulty: 5, color: '#eab308', x: 35 },
-  { name: 'Vi Tích Phân',  glowClass: 'glow-vitichphan', type: 'div', label: 'VI TÍCH PHÂN',  labelColor: 'text-lime-400',    emoji: 'δ',  difficulty: 4, color: '#84cc16', x: 75 },
-  { name: 'Xác Suất',      glowClass: 'saturn-glow',     type: 'video', label: 'XÁC SUẤT',   labelColor: 'text-amber-400',   emoji: '📊', difficulty: 3, color: '#f59e0b', x: 30 },
-  { name: 'Hình Học',      glowClass: 'geometry-glow',   type: 'div', label: 'HÌNH HỌC',     labelColor: 'text-emerald-400', emoji: '📐', difficulty: 2, color: '#10b981', x: 65 },
-  { name: 'Đại Số',        glowClass: 'algebra-glow',    type: 'div', label: 'ĐẠI SỐ',       labelColor: 'text-red-400',     emoji: '🪐', difficulty: 1, color: '#ef4444', x: 30 },
+  {
+    name: 'Giải Tích', glowClass: 'glow-giaitic', type: 'div', label: 'GIẢI TÍCH',
+    labelColor: 'text-pink-400', emoji: '∫', difficulty: 8, color: '#ec4899', x: 50,
+    description: 'Hành tinh sâu thẳm của vũ trụ toán học. Nơi nguyên hàm và tích phân vẽ nên dòng chảy của thay đổi liên tục.',
+    topics: ['Nguyên hàm & Tích phân', 'Giới hạn nâng cao', 'Chuỗi Taylor', 'Phương trình vi phân'],
+  },
+  {
+    name: 'Số Phức', glowClass: 'glow-sophuc', type: 'div', label: 'SỐ PHỨC',
+    labelColor: 'text-violet-400', emoji: 'ℂ', difficulty: 7, color: '#8b5cf6', x: 25,
+    description: 'Vùng không gian nơi i² = -1. Mở rộng số thực sang mặt phẳng phức, mở khóa kỹ thuật điện và lượng tử.',
+    topics: ['Đơn vị ảo i', 'Môđun & argument', 'Liên hợp', 'Công thức Euler'],
+  },
+  {
+    name: 'Tổ Hợp', glowClass: 'glow-tohop', type: 'div', label: 'TỔ HỢP',
+    labelColor: 'text-orange-400', emoji: 'Cₙ', difficulty: 6, color: '#f97316', x: 70,
+    description: 'Hành tinh đếm các khả năng. Hoán vị, chỉnh hợp, tổ hợp — nền tảng của xác suất và mật mã học.',
+    topics: ['Hoán vị', 'Chỉnh hợp', 'Tổ hợp', 'Tam giác Pascal'],
+  },
+  {
+    name: 'Ma Trận', glowClass: 'glow-matran', type: 'div', label: 'MA TRẬN',
+    labelColor: 'text-yellow-400', emoji: '⊞', difficulty: 5, color: '#eab308', x: 35,
+    description: 'Vùng đất của các bảng số chiều cao. Ma trận điều khiển đồ họa 3D, AI, và mọi phép biến đổi tuyến tính.',
+    topics: ['Phép nhân ma trận', 'Định thức', 'Ma trận nghịch đảo', 'Hệ phương trình tuyến tính'],
+  },
+  {
+    name: 'Vi Tích Phân', glowClass: 'glow-vitichphan', type: 'div', label: 'VI TÍCH PHÂN',
+    labelColor: 'text-lime-400', emoji: 'δ', difficulty: 4, color: '#84cc16', x: 75,
+    description: 'Cánh cổng vào thế giới của tốc độ thay đổi. Đạo hàm cho biết hàm thay đổi nhanh ra sao tại mỗi điểm.',
+    topics: ['Đạo hàm cơ bản', 'Quy tắc chuỗi', 'Đạo hàm hàm lượng giác', 'Ứng dụng đạo hàm'],
+  },
+  {
+    name: 'Xác Suất', glowClass: 'saturn-glow', type: 'video', label: 'XÁC SUẤT',
+    labelColor: 'text-amber-400', emoji: '📊', difficulty: 3, color: '#f59e0b', x: 30,
+    description: 'Hành tinh của sự ngẫu nhiên có thể đo lường. Từ tung xúc xắc tới định lý Bayes và học máy hiện đại.',
+    topics: ['Không gian mẫu', 'Biến cố độc lập', 'Định lý Bayes', 'Phân phối xác suất'],
+  },
+  {
+    name: 'Hình Học', glowClass: 'geometry-glow', type: 'div', label: 'HÌNH HỌC',
+    labelColor: 'text-emerald-400', emoji: '📐', difficulty: 2, color: '#10b981', x: 65,
+    description: 'Vùng đất xanh ngắt của điểm, đường, mặt phẳng. Khám phá tam giác, đường tròn và không gian Oxyz.',
+    topics: ['Tam giác', 'Đường tròn', 'Vector', 'Không gian Oxyz'],
+  },
+  {
+    name: 'Đại Số', glowClass: 'algebra-glow', type: 'div', label: 'ĐẠI SỐ',
+    labelColor: 'text-red-400', emoji: '🪐', difficulty: 1, color: '#ef4444', x: 30,
+    description: 'Hành tinh khởi đầu của mọi hành trình toán học. Phương trình bậc hai, định lý Viète, định thức 2×2.',
+    topics: ['Phương trình bậc hai', 'Định lý Viète', 'Định thức 2×2', 'Hệ phương trình'],
+  },
 ]
 
 const STAMINA_MAX = 180
@@ -313,6 +355,8 @@ export default function App() {
     }
   }, [view])
 
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey) {
       e.preventDefault()
@@ -329,10 +373,10 @@ export default function App() {
     const startQ = savedProgress >= tasks.length ? 0 : savedProgress
 
     if (idx === currentPlanetIdx) {
-      setAiMessage(`📍 Bạn đang ở **${planet.label}**. Mở nhiệm vụ ngay!`)
+      setAiMessage(`📍 Bạn đang ở **${planet.label}**. Xem thông tin hành tinh.`)
       setQuestionIdx(startQ)
       setCurrentPlanet(planet)
-      setView('mission')
+      setView('info')
       return
     }
 
@@ -349,8 +393,13 @@ export default function App() {
     setTimeout(() => {
       setWarp(false)
       setCurrentPlanet(planet)
-      setView('mission')
+      setView('info')
     }, 1800)
+  }
+
+  function startMission() {
+    setAnswered(null)
+    setView('mission')
   }
 
   function check(sel: number, cor: number) {
@@ -491,23 +540,30 @@ export default function App() {
                 const isConquered = conqueredPlanets.has(planet.name)
                 const cost = calcCost(currentPlanetIdx, i)
                 const canAfford = stamina >= cost
+                const isHovered = hoveredIdx === i
+                const planetTasks = data[planet.name]
+                const progress = planetProgress[planet.name] ?? 0
+                const tooltipOnLeft = planet.x > 55
 
                 return (
                   <div
                     key={planet.name}
                     onClick={() => flyTo(planet, i)}
+                    onMouseEnter={() => setHoveredIdx(i)}
+                    onMouseLeave={() => setHoveredIdx(null)}
                     style={{
                       position: 'absolute',
                       top: `${yPos}px`,
                       left: `${planet.x}%`,
                       transform: 'translateX(-50%)',
+                      zIndex: isHovered ? 40 : 10,
                     }}
                     className="flex flex-col items-center cursor-pointer group"
                   >
                     <div className="relative">
                       {planet.type === 'video' ? (
                         <video
-                          className={`planet-video-frame ${planet.glowClass} group-hover:scale-110 ${!canAfford ? 'opacity-40' : ''}`}
+                          className={`planet-video-frame ${planet.glowClass} group-hover:scale-110 ${!canAfford && i !== currentPlanetIdx ? 'opacity-40' : ''}`}
                           style={{ width: `${PLANET_SIZE}px`, height: `${PLANET_SIZE}px` }}
                           autoPlay loop muted playsInline
                         >
@@ -515,7 +571,7 @@ export default function App() {
                         </video>
                       ) : (
                         <div
-                          className={`planet-glow-box ${planet.glowClass} group-hover:scale-110 ${!canAfford ? 'opacity-40' : ''}`}
+                          className={`planet-glow-box ${planet.glowClass} group-hover:scale-110 ${!canAfford && i !== currentPlanetIdx ? 'opacity-40' : ''}`}
                           style={{ width: `${PLANET_SIZE}px`, height: `${PLANET_SIZE}px` }}
                         />
                       )}
@@ -532,8 +588,8 @@ export default function App() {
                     <span className={`text-[10px] font-bold ${planet.labelColor} mt-1 tracking-wide`}>
                       {planet.label}
                     </span>
-                    <span className={`text-[8px] mt-0.5 ${canAfford ? 'text-slate-400' : 'text-red-500'}`}>
-                      {cost} PP
+                    <span className={`text-[8px] mt-0.5 ${i === currentPlanetIdx ? 'text-cyan-400' : canAfford ? 'text-slate-400' : 'text-red-500'}`}>
+                      {i === currentPlanetIdx ? 'Đang ở đây' : `${cost} PP`}
                     </span>
                     <div className="flex gap-0.5 mt-0.5">
                       {Array.from({ length: 8 }).map((_, s) => (
@@ -544,6 +600,55 @@ export default function App() {
                         />
                       ))}
                     </div>
+
+                    {isHovered && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'absolute',
+                          top: '0',
+                          [tooltipOnLeft ? 'right' : 'left']: `${PLANET_SIZE + 16}px`,
+                          width: '260px',
+                          borderColor: planet.color,
+                        }}
+                        className="bg-slate-950/95 backdrop-blur-md border-2 rounded-xl p-3 shadow-2xl text-left pointer-events-auto"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl" style={{ color: planet.color }}>{planet.emoji}</span>
+                          <div>
+                            <p className={`text-xs font-bold ${planet.labelColor} tracking-wider`}>{planet.label}</p>
+                            <p className="text-[8px] text-slate-500">Độ khó {planet.difficulty}/8 · {planetTasks.length} câu</p>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-300 leading-relaxed mb-2">{planet.description}</p>
+                        <div className="border-t border-slate-800 pt-2 mb-2">
+                          <p className="text-[8px] text-slate-500 uppercase font-bold mb-1">Chủ đề</p>
+                          <div className="flex flex-wrap gap-1">
+                            {planet.topics.map(t => (
+                              <span key={t} className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: `${planet.color}22`, color: planet.color }}>
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-[9px] mb-1">
+                          <span className="text-slate-400">Tiến độ</span>
+                          <span style={{ color: planet.color }}>{progress}/{planetTasks.length}</span>
+                        </div>
+                        <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mb-2">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${(progress / planetTasks.length) * 100}%`, background: planet.color }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[9px] pt-1 border-t border-slate-800">
+                          <span className="text-slate-500">Chi phí</span>
+                          <span className={i === currentPlanetIdx ? 'text-cyan-400' : canAfford ? 'text-emerald-400' : 'text-red-400'}>
+                            {i === currentPlanetIdx ? 'Miễn phí' : `${cost} PP`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -568,6 +673,111 @@ export default function App() {
                   🌍 TRÁI ĐẤT (HOME)
                 </span>
                 <span className="text-[8px] text-slate-500 mt-0.5">Điểm xuất phát</span>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {view === 'info' && currentPlanet && tasks && (
+        <main className="relative z-10 flex-1 w-full max-w-4xl mx-auto p-6 flex items-center justify-center overflow-auto">
+          <div className="w-full bg-slate-900/90 border-2 rounded-2xl shadow-2xl p-6 md:p-8" style={{ borderColor: currentPlanet.color }}>
+            <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+              <div className="flex flex-col items-center flex-shrink-0">
+                {currentPlanet.type === 'video' ? (
+                  <video
+                    className={`w-32 h-32 md:w-40 md:h-40 rounded-full object-cover ${currentPlanet.glowClass}`}
+                    autoPlay loop muted playsInline
+                  >
+                    <source src="istockphoto-2211749025-600s_2k_saturn.mp4" type="video/mp4" />
+                  </video>
+                ) : (
+                  <div
+                    className={`planet-glow-box ${currentPlanet.glowClass}`}
+                    style={{ width: '10rem', height: '10rem' }}
+                  />
+                )}
+                <div className="flex gap-0.5 mt-3">
+                  {Array.from({ length: 8 }).map((_, s) => (
+                    <div
+                      key={s}
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: s < currentPlanet.difficulty ? currentPlanet.color : 'rgba(255,255,255,0.1)' }}
+                    />
+                  ))}
+                </div>
+                <span className="text-[9px] text-slate-400 mt-1">Độ khó {currentPlanet.difficulty}/8</span>
+              </div>
+
+              <div className="flex-1 text-center md:text-left">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Hành tinh</p>
+                <h2 className={`text-2xl md:text-3xl font-bold ${currentPlanet.labelColor} tracking-wider mb-3`}>
+                  {currentPlanet.emoji} {currentPlanet.label}
+                </h2>
+                <p className="text-sm text-slate-300 leading-relaxed mb-4">{currentPlanet.description}</p>
+
+                <div className="mb-4">
+                  <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Chủ đề khám phá</p>
+                  <div className="flex flex-wrap gap-2">
+                    {currentPlanet.topics.map(t => (
+                      <span
+                        key={t}
+                        className="text-xs px-3 py-1 rounded-full font-medium"
+                        style={{ background: `${currentPlanet.color}22`, color: currentPlanet.color, border: `1px solid ${currentPlanet.color}55` }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+                    <p className="text-[9px] uppercase text-slate-500 mb-1">Số câu hỏi</p>
+                    <p className="text-lg font-bold" style={{ color: currentPlanet.color }}>
+                      {tasks.length} câu
+                    </p>
+                  </div>
+                  <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+                    <p className="text-[9px] uppercase text-slate-500 mb-1">Tiến độ hiện tại</p>
+                    <p className="text-lg font-bold text-emerald-400">
+                      {planetProgress[currentPlanet.name] ?? 0}/{tasks.length}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-6">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${((planetProgress[currentPlanet.name] ?? 0) / tasks.length) * 100}%`,
+                      background: currentPlanet.color,
+                    }}
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={startMission}
+                    className="flex-1 p-4 rounded-xl text-sm font-bold tracking-wider transition shadow-lg hover:scale-[1.02]"
+                    style={{
+                      background: `linear-gradient(135deg, ${currentPlanet.color}, ${currentPlanet.color}99)`,
+                      color: 'white',
+                    }}
+                  >
+                    {(planetProgress[currentPlanet.name] ?? 0) > 0 && (planetProgress[currentPlanet.name] ?? 0) < tasks.length
+                      ? '▶  TIẾP TỤC NHIỆM VỤ'
+                      : (planetProgress[currentPlanet.name] ?? 0) >= tasks.length
+                        ? '🔄  ÔN TẬP LẠI'
+                        : '🚀  BẮT ĐẦU LÀM'}
+                  </button>
+                  <button
+                    onClick={() => setView('space')}
+                    className="sm:w-32 p-4 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition"
+                  >
+                    ← Bản đồ
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -692,10 +902,10 @@ export default function App() {
                   </button>
                 )}
                 <button
-                  onClick={() => setView('space')}
+                  onClick={() => setView('info')}
                   className="flex-1 p-3 bg-cyan-800 border border-cyan-500 rounded-xl text-xs font-bold text-cyan-200 hover:bg-cyan-700 transition"
                 >
-                  ← Bản đồ
+                  ← Thông tin
                 </button>
               </div>
             )}
