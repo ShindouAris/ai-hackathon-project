@@ -143,7 +143,7 @@ export function ChatBox({ context, userName }: ChatBoxProps) {
   }
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 w-[min(380px,calc(100vw-2rem))] h-[min(520px,calc(100vh-12rem))] flex flex-col bg-slate-950/95 border border-purple-500/40 rounded-2xl shadow-2xl shadow-purple-950/80 backdrop-blur-md">
+    <div className="fixed bottom-24 right-4 z-50 w-[min(380px,calc(100vw-2rem))] h-[min(520px,calc(100vh-12rem))] flex flex-col bg-transparent border border-purple-500/40 rounded-2xl shadow-2xl shadow-purple-950/80 backdrop-blur-md">
       <div className="flex items-center justify-between p-3 border-b border-purple-900/60 bg-gradient-to-r from-purple-950/60 to-cyan-950/40 rounded-t-2xl">
         <div className="flex items-center gap-2">
           <span className="w-8 h-8 rounded-full bg-purple-900/80 border border-purple-500/40 flex items-center justify-center text-base">

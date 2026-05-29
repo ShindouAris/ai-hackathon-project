@@ -25,6 +25,7 @@ import { ChatBox } from './components/ChatBox'
 import { Markdown } from './components/Markdown'
 import { FollowUpChat } from './components/FollowUpChat'
 import { NameModal } from './components/NameModal'
+import Galaxy from './ui/Galaxy'
 
 type PlanetName = 'Xác Suất' | 'Đại Số' | 'Hình Học' | 'Vi Tích Phân' | 'Ma Trận' | 'Số Phức' | 'Tổ Hợp' | 'Giải Tích'
 type View = 'space' | 'info' | 'mission'
@@ -1220,7 +1221,9 @@ export default function App() {
 
   return (
     <div className="galaxy-bg text-slate-100 flex flex-col" style={{ height: '100vh' }}>
-      <div className={`stars${warp ? ' warp-speed' : ''}`} />
+      <div className="absolute inset-0 z-0">
+        <Galaxy />
+      </div>
 
       <header className="relative z-30 bg-slate-950/80 border-b border-purple-950/40 p-3 flex justify-between items-center flex-shrink-0">
         <div>
@@ -1874,7 +1877,7 @@ export default function App() {
         </main>
       )}
 
-      <footer className="relative z-30 p-3 bg-slate-950/90 border-t border-purple-950/40 flex-shrink-0">
+      <footer className="relative z-30 p-3 bg-transparent border-t border-purple-950/40 flex-shrink-0">
         <div className="max-w-4xl mx-auto flex gap-3 items-start bg-slate-900/80 border border-purple-950/40 p-3 rounded-xl shadow-lg">
           <span className="bg-purple-950 border border-purple-500/30 w-8 h-8 rounded flex items-center justify-center text-sm shadow-md flex-shrink-0">
             🤖
